@@ -1,0 +1,26 @@
+# Pythonの仮想環境フォルダ
+# 自分の環境に合わせて名前を追加・変更してください
+venv/
+.venv/
+Python_Sample/ 
+
+# Pythonが自動生成するキャッシュファイル
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 実験結果を保存するフォルダ
+# データは巨大になる可能性があり、コードから再生成できるため、
+# バージョン管理に含めないのが一般的です。
+results/
+
+# IDE/エディタが自動生成する設定フォルダ
+.vscode/
+.idea/
+
+# OSが自動生成するシステムファイル
+# Mac
+.DS_Store
+# Windows
+Thumbs.db
