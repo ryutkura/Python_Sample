@@ -6,12 +6,13 @@ import os # ★osをインポート
 
 # 作成したパッケージからクラスをインポート
 from problems import SphereFunction, RosenbrockFunction
-from algorithms import PSO,EFWA
+from algorithms import PSO,EFWA, DynFWA
 
 # 実行可能なアルゴリズムを管理する辞書
 ALGORITHM_MAP = {
     'pso': PSO,
     'efwa': EFWA,
+    'dynfwa': DynFWA,
 }
 
 # ★★★ 追加：実行可能な問題を管理する辞書 ★★★

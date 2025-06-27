@@ -6,6 +6,7 @@ import argparse
 ALL_ALGORITHMS = [
     'pso',
     'efwa',
+    'dynfwa',
 ]
 
 ALL_PROBLEMS = [
