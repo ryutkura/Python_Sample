@@ -7,6 +7,7 @@ ALL_ALGORITHMS = [
     'pso',
     'efwa',
     'dynfwa',
+    'hcfwa',
 ]
 
 ALL_PROBLEMS = [
