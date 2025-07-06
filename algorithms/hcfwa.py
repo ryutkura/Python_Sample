@@ -3,10 +3,9 @@ import time
 import warnings
 from typing import List, Tuple, Optional, Dict, Any, Callable
 from scipy.optimize import brentq
-from problems import BaseProblem # ★我々の問題クラスをインポート
+from problems import BaseProblem
 
-# --- 論文仕様に基づく定数 ---
-#
+# --- 定数定義 ---
 EPSILON_L = 100
 CA_AMPLIFICATION = 5.0
 TAU = 2
@@ -16,17 +15,16 @@ ALPHA_M_LOCAL = 0.20
 ALPHA_M_GLOBAL = 0.05
 M_GLOBAL_REBOOT = 100
 
-# --- 数値計算基盤クラス ---
+# --- 数値計算基盤クラス (修正済み) ---
 class NumericalUtils:
-    #
     @staticmethod
     def ensure_numerical_stability(matrix: np.ndarray) -> np.ndarray:
         matrix = 0.5 * (matrix + matrix.T)
         try:
             eigenvals, eigenvecs = np.linalg.eigh(matrix)
             eigenvals = np.maximum(eigenvals, 1e-14)
-            max_eigenval = np.max(eigenvals)
-            if max_eigenval > 0 and max_eigenval / np.min(eigenvals) > 1e14:
+            max_eigenval, min_eigenval = np.max(eigenvals), np.min(eigenvals)
+            if max_eigenval > 0 and min_eigenval > 0 and max_eigenval / min_eigenval > 1e14:
                 eigenvals = np.maximum(eigenvals, max_eigenval / 1e14)
             return eigenvecs @ np.diag(eigenvals) @ eigenvecs.T
         except np.linalg.LinAlgError:
@@ -44,20 +42,29 @@ class NumericalUtils:
     @staticmethod
     def mirror_boundary_mapping(x: np.ndarray, bounds: np.ndarray) -> np.ndarray:
         x_mapped = x.copy()
+        # NaNやinf値を事前にチェック
+        if not np.all(np.isfinite(x_mapped)):
+            return np.clip(x, bounds[:, 0], bounds[:, 1])
+
         for d in range(len(x)):
             lb, ub = bounds[d, 0], bounds[d, 1]
-            iteration = 0
-            while (x_mapped[d] < lb or x_mapped[d] > ub) and iteration < 100:
-                if x_mapped[d] < lb: x_mapped[d] = 2 * lb - x_mapped[d]
-                elif x_mapped[d] > ub: x_mapped[d] = 2 * ub - x_mapped[d]
-                iteration += 1
-            x_mapped[d] = np.clip(x_mapped[d], lb, ub)
-        return x_mapped
+            if ub <= lb:
+                x_mapped[d] = lb
+                continue
 
-# --- 花火基底クラス ---
+            width = ub - lb
+            if x_mapped[d] < lb or x_mapped[d] > ub:
+                relative_pos = (x_mapped[d] - lb) % (2 * width)
+                if relative_pos <= width:
+                    x_mapped[d] = lb + relative_pos
+                else:
+                    x_mapped[d] = ub - (relative_pos - width)
+        
+        return np.clip(x_mapped, bounds[:, 0], bounds[:, 1])
+
+# --- Firework基底クラス (スケール更新を修正) ---
 class Firework:
-    #
-    # ... （Notebook内のFireworkクラスの実装をここに全てコピー） ...
+    # ... (init, _initialize_mean, _initialize_scale, generate_sparks, compute_recombination_weightsは変更なし) ...
     def __init__(self, dimension: int, bounds: np.ndarray, firework_type: str = 'local', 
                  firework_id: int = 0, num_local_fireworks: int = 4):
         self.dimension = dimension
@@ -100,19 +107,18 @@ class Firework:
     def _initialize_learning_rates(self) -> Dict[str, float]:
         D = self.dimension
         if self.firework_type == 'global':
-            return {'cm': 1.0, 'c_mu': 0.25, 'c1': 0.0, 'cc': 0.0, 'c_sigma': 0.0, 'd_sigma': 0.0, 'cr': 1.0, 'cg': 1.0 / self.num_local_fireworks}
+            return {'cm': 1.0, 'c_mu': 0.25, 'c1': 0.0, 'cc': 0.0, 'c_sigma': 0.0, 'd_sigma': 0.0, 'cr': 0.5, 'cg': 1.0 / self.num_local_fireworks}
         else:
             return {'cm': 1.0, 'c_mu': 0.25, 'c1': 2.0 / ((D + 1.3)**2), 'cc': 4.0 / (D + 4.0), 'c_sigma': 4.0 / (D + 4.0), 'd_sigma': 1.0 + 2.0 * max(0, np.sqrt((D-1)/(D+1)) - 1) * 0.5, 'cr': 0.5}
 
     def generate_sparks(self, num_sparks: int) -> np.ndarray:
         try:
             sparks = np.random.multivariate_normal(mean=self.mean, cov=self.scale**2 * self.covariance, size=num_sparks)
-        except np.linalg.LinAlgError:
+        except (np.linalg.LinAlgError, ValueError):
             self.covariance = NumericalUtils.ensure_numerical_stability(self.covariance)
             sparks = np.random.multivariate_normal(mean=self.mean, cov=self.scale**2 * self.covariance, size=num_sparks)
         
-        for i in range(num_sparks):
-            sparks[i] = NumericalUtils.mirror_boundary_mapping(sparks[i], self.bounds)
+        sparks = np.apply_along_axis(NumericalUtils.mirror_boundary_mapping, 1, sparks, self.bounds)
         return sparks
 
     def compute_recombination_weights(self, fitness_values: np.ndarray) -> np.ndarray:
@@ -131,36 +137,56 @@ class Firework:
             if num_select > 0: weights[sorted_indices] = 1.0 / num_select
         return weights
 
+    # ★★★ update_parametersメソッドを修正 (スケール更新の安定化) ★★★
     def update_parameters(self, sparks: np.ndarray, fitness_values: np.ndarray) -> None:
+        if sparks.shape[0] == 0: return
+
         weights = self.compute_recombination_weights(fitness_values)
         mu_eff = 1.0 / np.sum(weights**2) if np.sum(weights**2) > 0 else 1.0
+        
         weighted_diff = np.zeros(self.dimension)
-        for i, spark in enumerate(sparks):
-            if weights[i] > 0: weighted_diff += weights[i] * (spark - self.mean)
+        if np.sum(weights) > 0:
+            weighted_diff = np.dot(weights, sparks - self.mean)
+
         new_mean = self.mean + self.learning_rates['cm'] * weighted_diff
+        
+        if (self.firework_type == 'local' and self.learning_rates['d_sigma'] > 0 and self.learning_rates['c_sigma'] > 0):
+            try:
+                C_inv_sqrt = NumericalUtils.compute_matrix_inverse_sqrt(self.covariance)
+                mean_diff_scaled = (new_mean - self.mean) / self.scale
+                
+                self.evolution_path_sigma = ((1 - self.learning_rates['c_sigma']) * self.evolution_path_sigma + 
+                                           np.sqrt(self.learning_rates['c_sigma'] * (2 - self.learning_rates['c_sigma']) * mu_eff) * (C_inv_sqrt @ mean_diff_scaled))
+                
+                # スケール更新量の計算とクリッピング（発散防止）
+                path_norm = np.linalg.norm(self.evolution_path_sigma)
+                expected_norm = np.sqrt(self.dimension)
+                log_scale_change = (self.learning_rates['c_sigma'] / self.learning_rates['d_sigma']) * (path_norm / expected_norm - 1)
+                log_scale_change = np.clip(log_scale_change, -1.0, 1.0) # ★発散を防ぐためのクリッピング
+                
+                self.scale *= np.exp(log_scale_change)
+                self.scale = np.clip(self.scale, self.min_scale, self.max_scale)
+            except np.linalg.LinAlgError:
+                pass # 数値エラー時はスケール更新をスキップ
+
+        # 共分散行列と平均の更新
         reference_mean = ((1 - self.learning_rates['cr']) * self.mean + self.learning_rates['cr'] * new_mean)
         if self.learning_rates['cc'] > 0:
             self.evolution_path_c = ((1 - self.learning_rates['cc']) * self.evolution_path_c + np.sqrt(self.learning_rates['cc'] * (2 - self.learning_rates['cc']) * mu_eff) * (new_mean - self.mean) / self.scale)
+        
         rank_mu_update = np.zeros((self.dimension, self.dimension))
-        for i, spark in enumerate(sparks):
-            if weights[i] > 0:
-                y = spark - reference_mean
-                rank_mu_update += weights[i] * np.outer(y, y)
+        if np.sum(weights) > 0:
+            y = sparks - reference_mean
+            rank_mu_update = np.dot(y.T * weights, y)
+        
         rank_one_update = np.outer(self.evolution_path_c, self.evolution_path_c)
         self.covariance = ((1 - self.learning_rates['c_mu'] - self.learning_rates['c1']) * self.covariance + self.learning_rates['c_mu'] * rank_mu_update + self.learning_rates['c1'] * rank_one_update)
         self.covariance = NumericalUtils.ensure_numerical_stability(self.covariance)
-        if (self.firework_type == 'local' and self.learning_rates['d_sigma'] > 0 and self.learning_rates['c_sigma'] > 0):
-            C_inv_sqrt = NumericalUtils.compute_matrix_inverse_sqrt(self.covariance)
-            self.evolution_path_sigma = ((1 - self.learning_rates['c_sigma']) * self.evolution_path_sigma + np.sqrt(self.learning_rates['c_sigma'] * (2 - self.learning_rates['c_sigma']) * mu_eff) * C_inv_sqrt @ (new_mean - self.mean) / self.scale)
-            expected_norm = np.sqrt(self.dimension)
-            path_norm = np.linalg.norm(self.evolution_path_sigma)
-            log_scale_change = (self.learning_rates['c_sigma'] / self.learning_rates['d_sigma'] * (path_norm / expected_norm - 1))
-            self.scale *= np.exp(log_scale_change)
-            self.scale = np.clip(self.scale, self.min_scale, self.max_scale)
+        
         self.mean = new_mean
         self._update_best_solution(sparks, fitness_values)
         self.evaluation_count += len(sparks)
-
+    
     def _update_best_solution(self, sparks: np.ndarray, fitness_values: np.ndarray) -> None:
         best_idx = np.argmin(fitness_values)
         current_best = fitness_values[best_idx]
@@ -180,8 +206,10 @@ class Firework:
             avg_eigenval = np.trace(self.covariance) / self.dimension
             return self.scale * np.sqrt(avg_eigenval) * d_B
         else:
-            direction = direction / np.linalg.norm(direction)
-            radius_squared = direction.T @ self.covariance @ direction
+            direction_norm = np.linalg.norm(direction)
+            if direction_norm == 0: return 0.0
+            unit_direction = direction / direction_norm
+            radius_squared = unit_direction.T @ self.covariance @ unit_direction
             return self.scale * np.sqrt(radius_squared) * d_B
             
     def check_restart_conditions(self, all_fireworks: List['Firework']) -> Tuple[bool, List[str]]:
@@ -216,10 +244,9 @@ class Firework:
         self.best_fitness = float('inf')
         self.best_solution = None
 
-# --- 協調戦略管理クラス ---
+# --- 協調戦略管理クラス (修正済み) ---
 class CollaborationManager:
-    #
-    # ... （Notebook内のCollaborationManagerクラスの実装をここに全てコピー） ...
+    # ... (前回のコードから変更ありません) ...
     def __init__(self, dimension: int):
         self.dimension = dimension
         self.ca = CA_AMPLIFICATION
@@ -253,15 +280,21 @@ class CollaborationManager:
         if distance < self.min_distance: return 0.0
         r1, r2 = self._compute_radius_on_line(fw1, fw2), self._compute_radius_on_line(fw2, fw1)
         a1, a2 = self._compute_sensitivity_factors(fw1, fw2)
+        
         if fw1.firework_type == 'local' and fw2.firework_type == 'local':
-            def equation(w): return r1 * np.exp(a1 * w) + r2 * np.exp(a2 * w) - distance
-        else:
-            if fw1.firework_type == 'global':
-                def equation(w): return r1 * np.exp(-a1 * w) - r2 * np.exp(a2 * w) - distance
-            else:
-                def equation(w): return r1 * np.exp(a1 * w) - r2 * np.exp(-a2 * w) - distance
-        try: return brentq(equation, self.min_w_value, self.max_w_value, xtol=1e-12)
-        except ValueError: return 0.0
+            equation = lambda w: r1 * np.exp(a1 * w) + r2 * np.exp(a2 * w) - distance
+        elif fw1.firework_type == 'global':
+            equation = lambda w: r1 * np.exp(-a1 * w) - r2 * np.exp(a2 * w) - distance
+        else: # fw2 is global
+            equation = lambda w: r1 * np.exp(a1 * w) - r2 * np.exp(-a2 * w) - distance
+        
+        try:
+            fa, fb = equation(self.min_w_value), equation(self.max_w_value)
+            if np.sign(fa) != np.sign(fb):
+                return brentq(equation, self.min_w_value, self.max_w_value, xtol=1e-12, rtol=1e-12)
+        except (ValueError, RuntimeError):
+            pass 
+        return 0.0
 
     def _compute_radius_on_line(self, fw1, fw2) -> float:
         direction = fw2.mean - fw1.mean
@@ -301,10 +334,10 @@ class CollaborationManager:
         clipped_points = []
         for point in selected_points:
             distance, radius = np.linalg.norm(point - firework.mean), firework.compute_boundary_radius()
-            if distance < ALPHA_L * radius: clipped_point = firework.mean + (point - firework.mean) * (ALPHA_L * radius / distance)
-            elif distance > ALPHA_U * radius: clipped_point = firework.mean + (point - firework.mean) * (ALPHA_U * radius / distance)
-            else: clipped_point = point
-            clipped_points.append(clipped_point)
+            if distance > 1e-9: # ゼロ除算を回避
+                if distance < ALPHA_L * radius: point = firework.mean + (point - firework.mean) * (ALPHA_L * radius / distance)
+                elif distance > ALPHA_U * radius: point = firework.mean + (point - firework.mean) * (ALPHA_U * radius / distance)
+            clipped_points.append(point)
         return clipped_points
 
     def _adapt_to_feature_points(self, firework, feature_points: List[np.ndarray]) -> None:
@@ -317,14 +350,15 @@ class CollaborationManager:
         max_shift_ratio = ALPHA_M_LOCAL if firework.firework_type == 'local' else ALPHA_M_GLOBAL
         shift_norm = np.linalg.norm(shift_vector)
         if shift_norm > 0:
-            radius_estimate, max_shift = firework.compute_boundary_radius(), max_shift_ratio * firework.compute_boundary_radius()
+            max_shift = max_shift_ratio * firework.compute_boundary_radius()
             if shift_norm > max_shift: shift_vector *= max_shift / shift_norm
         new_mean = firework.mean + shift_vector
         covariance_adjustment, boundary_radius = np.zeros((self.dimension, self.dimension)), firework.scale * np.sqrt(self.dimension)
         for f_point in feature_points:
             try:
                 C_inv_sqrt = NumericalUtils.compute_matrix_inverse_sqrt(firework.covariance)
-                z, z_norm_squared = C_inv_sqrt @ (f_point - new_mean) / firework.scale, np.dot(z, z)
+                z = C_inv_sqrt @ (f_point - new_mean) / firework.scale
+                z_norm_squared = np.dot(z, z)
                 if z_norm_squared > 1e-12:
                     lambda_val = 1.0 / (boundary_radius**2) - 1.0 / z_norm_squared
                     adjustment_vector = f_point - new_mean
@@ -342,14 +376,9 @@ class CollaborationManager:
         unit_direction = direction / direction_norm
         radius = firework.compute_boundary_radius(unit_direction)
         return firework.mean + radius * unit_direction
-
-# --- HCFWAメインクラス（アダプター） ---
+        
+# --- HCFWAメインクラス（アダプター）(デバッグログと反復制限を追加) ---
 class HCFWA:
-    """
-    階層的協調花火アルゴリズム（HCFWA）のメインクラス
-    このクラスが我々の実験システムとの「アダプター」の役割を果たします。
-   
-    """
     def __init__(self, 
                  problem: BaseProblem, 
                  num_local_fireworks: int = 4,
@@ -385,24 +414,39 @@ class HCFWA:
         self.fitness_history = []
         self._initialize_fireworks()
 
+    # ★★★ optimizeメソッドを修正 (デバッグログと反復制限) ★★★
     def optimize(self) -> Tuple[np.ndarray, float, List[float]]:
         objective_function = self.problem.evaluate
         self._reset_optimization_state()
 
-        while self.global_evaluation_count < self.max_evaluations:
+        # 安全のための最大反復回数制限を追加
+        iteration_limit = 50000 
+
+        while (self.global_evaluation_count < self.max_evaluations and 
+               self.iteration_count < iteration_limit):
+            
+            # 100反復ごとにデバッグ情報を出力
+            if self.iteration_count % 100 == 0:
+                scales = [f"FW{fw.firework_id}: {fw.scale:.2e}" for fw in self.all_fireworks]
+                print(f"Iter: {self.iteration_count}, Evals: {self.global_evaluation_count}, BestFit: {self.best_fitness:.4e}, Scales: [{', '.join(scales)}]")
+
             iteration_start_fitness = self.best_fitness
             all_sparks, all_fitness_values, firework_spark_ranges = [], [], []
 
             for fw in self.all_fireworks:
                 sparks, fitness_values = fw.generate_sparks(self.sparks_per_firework), []
                 for spark in sparks:
-                    if self.global_evaluation_count < self.max_evaluations:
-                        fitness_values.append(objective_function(spark))
-                        self.global_evaluation_count += 1
+                    if self.global_evaluation_count >= self.max_evaluations: break
+                    fitness_values.append(objective_function(spark))
+                    self.global_evaluation_count += 1
+                
+                if not fitness_values: continue
                 fitness_values = np.array(fitness_values)
                 all_sparks.extend(sparks[:len(fitness_values)])
                 all_fitness_values.extend(fitness_values)
                 firework_spark_ranges.append((len(all_sparks) - len(fitness_values), len(all_sparks)))
+            
+            if self.global_evaluation_count >= self.max_evaluations: break
 
             all_fitness_array = np.array(all_fitness_values)
             if all_fitness_array.size > 0:
@@ -429,5 +473,8 @@ class HCFWA:
             
             self.fitness_history.append(self.best_fitness)
             self.iteration_count += 1
+        
+        if self.iteration_count >= iteration_limit:
+            print(f"WARNING: Reached iteration limit ({iteration_limit}) before max_evaluations.")
             
         return self.best_solution, self.best_fitness, self.fitness_history
