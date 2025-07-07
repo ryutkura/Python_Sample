@@ -15,99 +15,52 @@ ALPHA_M_LOCAL = 0.20
 ALPHA_M_GLOBAL = 0.05
 M_GLOBAL_REBOOT = 100
 
-# --- 数値計算基盤クラス (改良版) ---
+# --- 数値計算基盤クラス (より堅牢な実装) ---
 class NumericalUtils:
     @staticmethod
-    def ensure_numerical_stability(matrix: np.ndarray, min_eigenval: float = 1e-10) -> np.ndarray:
-        """共分散行列の数値的安定性を保証"""
-        # 対称化
+    def ensure_numerical_stability(matrix: np.ndarray, epsilon=1e-14) -> np.ndarray:
+        if not np.all(np.isfinite(matrix)): return np.eye(matrix.shape[0])
         matrix = 0.5 * (matrix + matrix.T)
-        
         try:
-            # 固有値分解
             eigenvals, eigenvecs = np.linalg.eigh(matrix)
-            
-            # 固有値の修正
-            eigenvals = np.maximum(eigenvals, min_eigenval)
-            
-            # 条件数の制限
-            max_eigenval = np.max(eigenvals)
-            min_eigenval_allowed = max_eigenval / 1e10  # 条件数を1e10以下に制限
-            eigenvals = np.maximum(eigenvals, min_eigenval_allowed)
-            
-            # 再構成
+            eigenvals[eigenvals < epsilon] = epsilon
+            max_eigenval, min_eigenval = np.max(eigenvals), np.min(eigenvals)
+            if min_eigenval > 0 and max_eigenval / min_eigenval > 1e14:
+                eigenvals = np.maximum(eigenvals, max_eigenval / 1e14)
             return eigenvecs @ np.diag(eigenvals) @ eigenvecs.T
-            
-        except np.linalg.LinAlgError:
-            # エラー時は単位行列に小さな値を加えた行列を返す
-            return np.eye(matrix.shape[0]) * min_eigenval
-    
+        except np.linalg.LinAlgError: return np.eye(matrix.shape[0])
+
     @staticmethod
-    def compute_matrix_inverse_sqrt(matrix: np.ndarray, regularization: float = 1e-10) -> np.ndarray:
-        """行列の逆平方根を安定的に計算"""
+    def compute_matrix_inverse_sqrt(matrix: np.ndarray, epsilon=1e-14) -> np.ndarray:
         try:
             eigenvals, eigenvecs = np.linalg.eigh(matrix)
-            # 正則化
-            eigenvals = np.maximum(eigenvals, regularization)
-            # 逆平方根の計算
-            inv_sqrt_eigenvals = 1.0 / np.sqrt(eigenvals)
-            return eigenvecs @ np.diag(inv_sqrt_eigenvals) @ eigenvecs.T
-        except np.linalg.LinAlgError:
-            # エラー時は正則化された単位行列の逆平方根を返す
-            return np.eye(matrix.shape[0]) / np.sqrt(regularization)
-    
-    @staticmethod
-    def safe_norm(matrix: np.ndarray, ord=2) -> float:
-        """行列ノルムの安全な計算"""
-        try:
-            # Frobenius normを使用（より安定）
-            if ord == 2:
-                return np.sqrt(np.sum(matrix**2))
-            else:
-                return np.linalg.norm(matrix, ord=ord)
-        except:
-            return 1.0
-    
+            eigenvals[eigenvals < epsilon] = epsilon
+            return eigenvecs @ np.diag(1.0 / np.sqrt(eigenvals)) @ eigenvecs.T
+        except np.linalg.LinAlgError: return np.eye(matrix.shape[0])
+
     @staticmethod
     def mirror_boundary_mapping(x: np.ndarray, bounds: np.ndarray) -> np.ndarray:
-        """境界制約の処理"""
         x_mapped = x.copy()
-        
-        # NaNやInfのチェック
-        if not np.all(np.isfinite(x_mapped)):
-            # 無効な値は境界の中心にリセット
-            invalid_mask = ~np.isfinite(x_mapped)
-            x_mapped[invalid_mask] = (bounds[invalid_mask, 0] + bounds[invalid_mask, 1]) / 2
-        
-        # 境界内への射影
+        if not np.all(np.isfinite(x_mapped)): return np.clip(x, bounds[:, 0], bounds[:, 1])
         for d in range(len(x)):
             lb, ub = bounds[d, 0], bounds[d, 1]
-            if ub <= lb:
-                x_mapped[d] = lb
-                continue
-            
-            # 周期的境界条件
+            if ub <= lb: continue
             width = ub - lb
-            if x_mapped[d] < lb or x_mapped[d] > ub:
-                # 境界内に収まるまで折り返し
-                relative_pos = (x_mapped[d] - lb) % (2 * width)
-                if relative_pos <= width:
-                    x_mapped[d] = lb + relative_pos
-                else:
-                    x_mapped[d] = ub - (relative_pos - width)
-        
-        # 最終的なクリップ
+            if not (lb <= x_mapped[d] <= ub):
+                val, rem = divmod(x_mapped[d] - lb, 2 * width)
+                x_mapped[d] = lb + rem if val % 2 == 0 else ub - rem
         return np.clip(x_mapped, bounds[:, 0], bounds[:, 1])
 
 # --- Firework基底クラス (数値安定性を強化) ---
 class Firework:
-    def __init__(self, dimension: int, bounds: np.ndarray, firework_type: str = 'local',
-                 firework_id: int = 0, num_local_fireworks: int = 4):
+    def __init__(self, dimension: int, bounds: np.ndarray, firework_type: str, firework_id: int, num_local_fireworks: int):
         self.dimension = dimension
-        self.bounds = np.array(bounds)
+        self.bounds = bounds
         self.firework_type = firework_type
         self.firework_id = firework_id
         self.num_local_fireworks = num_local_fireworks
+        self.rng = np.random.default_rng()
+        self._reset_state()
         
         # 初期化
         self.mean = self._initialize_mean()
@@ -139,6 +92,29 @@ class Firework:
             return (self.bounds[:, 0] + self.bounds[:, 1]) / 2
         else:
             return np.random.uniform(self.bounds[:, 0], self.bounds[:, 1])
+        
+    def _reset_state(self):
+        self.mean = self.rng.uniform(self.bounds[:, 0], self.bounds[:, 1]) if self.firework_type == 'local' else (self.bounds[:, 0] + self.bounds[:, 1]) / 2
+        self.covariance = np.eye(self.dimension)
+        ub, lb = np.max(self.bounds[:, 1]), np.min(self.bounds[:, 0])
+        expected_norm = np.sqrt(self.dimension) or 1
+        global_scale = (ub - lb) / (2 * expected_norm)
+        self.scale = global_scale / self.num_local_fireworks if self.firework_type == 'local' else global_scale
+        self.evolution_path_c = np.zeros(self.dimension)
+        self.evolution_path_sigma = np.zeros(self.dimension)
+        D = self.dimension
+        mu = (4 * D // 2)
+        mu_eff = mu
+        self.learning_rates = {
+            'cm': 1.0, 'c_mu': 0.25,
+            'c1': 2.0 / ((D + 1.3)**2 + mu_eff),
+            'cc': (4.0 + mu_eff / D) / (D + 4.0 + 2 * mu_eff / D),
+            'c_sigma': (mu_eff + 2.0) / (D + mu_eff + 5.0),
+            'd_sigma': 1.0 + 2.0 * max(0, np.sqrt((mu_eff - 1.0) / (D + 1.0)) - 1.0) + (mu_eff + 2.0) / (D + mu_eff + 5.0),
+            'cr': 0.5
+        } if self.firework_type == 'local' else {'cm': 1.0, 'c_mu': 0.25, 'c1': 0.0, 'cc': 0.0, 'c_sigma': 0.0, 'd_sigma': 0.0, 'cr': 0.5, 'cg': 1.0 / (self.num_local_fireworks or 1)}
+        self.best_fitness = float('inf')
+        self.stagnation_count = 0
     
     def _initialize_scale(self) -> float:
         ub = np.max(self.bounds[:, 1])
@@ -176,33 +152,14 @@ class Firework:
             }
     
     def generate_sparks(self, num_sparks: int) -> np.ndarray:
-        """火花の生成（数値的に安定）"""
-        # 共分散行列の安定化
+        safe_scale = np.clip(np.nan_to_num(self.scale), 1e-8, 1e8)
         stable_cov = NumericalUtils.ensure_numerical_stability(self.covariance)
-        
-        # スケールの制限
-        safe_scale = np.clip(self.scale, self.min_scale, self.max_scale)
-        
         try:
-            # 共分散行列のスケーリング
-            scaled_cov = safe_scale**2 * stable_cov
-            
-            # サンプリング
-            sparks = np.random.multivariate_normal(
-                mean=self.mean, 
-                cov=scaled_cov, 
-                size=num_sparks
-            )
-        except (np.linalg.LinAlgError, ValueError) as e:
-            # エラー時は等方的なガウス分布からサンプリング
-            warnings.warn(f"Multivariate normal sampling failed: {e}. Using isotropic Gaussian.")
-            sparks = self.mean + safe_scale * np.random.randn(num_sparks, self.dimension)
-        
-        # 境界処理
-        for i in range(num_sparks):
-            sparks[i] = NumericalUtils.mirror_boundary_mapping(sparks[i], self.bounds)
-        
-        return sparks
+            sparks = self.rng.multivariate_normal(mean=self.mean, cov=(safe_scale**2) * stable_cov, size=num_sparks, check_valid='warn', tol=1e-8)
+        except (np.linalg.LinAlgError, ValueError):
+            sparks = self.mean + safe_scale * self.rng.standard_normal(size=(num_sparks, self.dimension))
+        return np.apply_along_axis(NumericalUtils.mirror_boundary_mapping, 1, sparks, self.bounds)
+    
     
     def compute_recombination_weights(self, fitness_values: np.ndarray) -> np.ndarray:
         """重みの計算"""
@@ -678,28 +635,37 @@ class CollaborationManager:
 class HCFWA:
     """階層協調花火アルゴリズム"""
     
-    def __init__(self,
-                 problem: BaseProblem,
+    def __init__(self, 
+                 problem: BaseProblem, 
                  num_local_fireworks: int = 4,
                  sparks_per_firework: int = None,
-                 max_evaluations: int = 10000000):
+                 max_evaluations: int = 100000): # ★評価回数のデフォルトを現実的な値に変更
         
         self.problem = problem
         self.dimension = problem.dimension
         self.bounds = np.array([problem.lower_bounds, problem.upper_bounds]).T
         self.num_local_fireworks = num_local_fireworks
-        
-        # 火花数の設定
+        self.max_evaluations = max_evaluations
+
         if sparks_per_firework is None:
-            total_sparks = max(20, 4 * self.dimension)
-            self.sparks_per_firework = total_sparks // (num_local_fireworks + 1)
+            total_sparks = max(20, int(4 + np.floor(3 * np.log(self.dimension))))
+            self.sparks_per_firework = total_sparks
         else:
             self.sparks_per_firework = sparks_per_firework
         
-        self.max_evaluations = max_evaluations
+        self._reset_state()
+
+    def _reset_state(self):
+        self.best_fitness = float('inf')
+        self.best_solution = None
+        self.global_evaluation_count = 0
+        self.iteration_count = 0
+        self.global_stagnation_count = 0
+        self.fitness_history = []
+        # 各種クラスのインスタンス化
+        self.fireworks = [Firework(self.dimension, self.bounds, 'local' if i > 0 else 'global', i, self.num_local_fireworks) for i in range(self.num_local_fireworks + 1)]
         self.collaboration_manager = CollaborationManager(self.dimension)
-        
-        self._reset_optimization_state()
+    
     
     def _initialize_fireworks(self) -> None:
         """花火の初期化"""
@@ -725,129 +691,48 @@ class HCFWA:
         self._initialize_fireworks()
     
     def optimize(self) -> Tuple[np.ndarray, float, List[float]]:
-        """最適化の実行"""
+        self._reset_state()
         objective_function = self.problem.evaluate
-        self._reset_optimization_state()
         
-        # 安全のための最大反復回数
-        iteration_limit = 50000
-        
-        while (self.global_evaluation_count < self.max_evaluations and 
-               self.iteration_count < iteration_limit):
-            
-            # デバッグ情報の出力
-            # if self.iteration_count % 100 == 0:
-            #     scales = [f"FW{fw.firework_id}: {fw.scale:.2e}" for fw in self.all_fireworks]
-            #     print(f"Iter: {self.iteration_count}, Evals: {self.global_evaluation_count}, "
-            #           f"BestFit: {self.best_fitness:.4e}, Scales: [{', '.join(scales)}]")
-            
+        while self.global_evaluation_count < self.max_evaluations:
             iteration_start_fitness = self.best_fitness
+            all_sparks_data = []
+
+            # スパーク生成と評価
+            for fw in self.fireworks:
+                if self.global_evaluation_count >= self.max_evaluations: break
+                sparks = fw.generate_sparks(self.sparks_per_firework)
+                fitness_values = np.array([objective_function(s) for s in sparks])
+                self.global_evaluation_count += len(sparks)
+                all_sparks_data.append({'sparks': sparks, 'fitness': fitness_values, 'firework': fw})
+
+            # 全体最良解の更新
+            for data in all_sparks_data:
+                if data['fitness'].size > 0:
+                    best_idx = np.argmin(data['fitness'])
+                    if data['fitness'][best_idx] < self.best_fitness:
+                        self.best_fitness = data['fitness'][best_idx]
+                        self.best_solution = data['sparks'][best_idx]
+
+            # 各花火のパラメータ更新
+            for data in all_sparks_data:
+                data['firework'].update_parameters(data['sparks'], data['fitness'])
+
+            # 協調と再起動
+            self.collaboration_manager.execute_collaboration(self.fireworks)
+            for fw in self.fireworks:
+                should_restart, _ = fw.check_restart_conditions(self.fireworks)
+                if should_restart: fw.restart()
             
-            # 全ての火花を生成・評価
-            all_sparks = []
-            all_fitness_values = []
-            firework_spark_ranges = []
+            # 全体停滞チェック
+            if self.best_fitness >= iteration_start_fitness: self.global_stagnation_count += 1
+            else: self.global_stagnation_count = 0
             
-            for fw in self.all_fireworks:
-                try:
-                    # 火花生成
-                    sparks = fw.generate_sparks(self.sparks_per_firework)
-                    fitness_values = []
-                    
-                    # 評価
-                    for spark in sparks:
-                        if self.global_evaluation_count >= self.max_evaluations:
-                            break
-                        
-                        try:
-                            fitness = objective_function(spark)
-                            if np.isfinite(fitness):
-                                fitness_values.append(fitness)
-                            else:
-                                fitness_values.append(float('inf'))
-                        except Exception:
-                            fitness_values.append(float('inf'))
-                        
-                        self.global_evaluation_count += 1
-                    
-                    if not fitness_values:
-                        continue
-                    
-                    fitness_values = np.array(fitness_values)
-                    all_sparks.extend(sparks[:len(fitness_values)])
-                    all_fitness_values.extend(fitness_values)
-                    firework_spark_ranges.append((len(all_sparks) - len(fitness_values), len(all_sparks)))
-                    
-                except Exception as e:
-                    warnings.warn(f"Error in spark generation/evaluation for FW{fw.firework_id}: {e}")
-                    continue
-            
-            if self.global_evaluation_count >= self.max_evaluations:
-                break
-            
-            # 最良解の更新
-            if all_fitness_values:
-                all_fitness_array = np.array(all_fitness_values)
-                best_idx = np.argmin(all_fitness_array)
-                
-                if all_fitness_array[best_idx] < self.best_fitness:
-                    self.best_fitness = all_fitness_array[best_idx]
-                    self.best_solution = np.array(all_sparks[best_idx])
-            
-            # パラメータ更新
-            for i, fw in enumerate(self.all_fireworks):
-                if i < len(firework_spark_ranges):
-                    start_idx, end_idx = firework_spark_ranges[i]
-                    if start_idx < end_idx:
-                        try:
-                            fw.update_parameters(
-                                np.array(all_sparks[start_idx:end_idx]),
-                                all_fitness_array[start_idx:end_idx]
-                            )
-                        except Exception as e:
-                            warnings.warn(f"Error in parameter update for FW{fw.firework_id}: {e}")
-            
-            # 協調
-            try:
-                self.collaboration_manager.execute_collaboration(self.all_fireworks)
-            except Exception as e:
-                warnings.warn(f"Error in collaboration: {e}")
-            
-            # 再起動チェック
-            for fw in self.all_fireworks:
-                try:
-                    should_restart, reasons = fw.check_restart_conditions(self.all_fireworks)
-                    if should_restart:
-                        fw.restart()
-                except Exception as e:
-                    warnings.warn(f"Error in restart check for FW{fw.firework_id}: {e}")
-            
-            # 大域的な停滞チェック
-            if self.best_fitness >= iteration_start_fitness:
-                self.global_stagnation_count += 1
-            else:
-                self.global_stagnation_count = 0
-            
-            # 全体再起動
             if self.global_stagnation_count >= M_GLOBAL_REBOOT:
-                # 最良解を保存
-                best_solution_backup = self.best_solution.copy() if self.best_solution is not None else None
-                best_fitness_backup = self.best_fitness
-                
-                # 全花火を再起動
-                for fw in self.all_fireworks:
-                    fw.restart()
-                
-                # 最良解を復元
-                self.best_solution = best_solution_backup
-                self.best_fitness = best_fitness_backup
-                self.global_stagnation_count = 0
-            
-            # 履歴の更新
+                # 全体リブート処理
+                self._reset_state()
+
             self.fitness_history.append(self.best_fitness)
             self.iteration_count += 1
-        
-        # if self.iteration_count >= iteration_limit:
-        #     print(f"WARNING: Reached iteration limit ({iteration_limit}) before max_evaluations.")
-        
+
         return self.best_solution, self.best_fitness, self.fitness_history
