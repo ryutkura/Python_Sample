@@ -7,6 +7,8 @@ from problems import BaseProblem
 
 # --- 定数定義 ---
 EPSILON_L = 100
+EPSILON_V = 1e-5  # 適応度収束閾値を追加
+EPSILON_P = 1e-5  # 位置収束閾値を追加
 CA_AMPLIFICATION = 5.0
 TAU = 2
 ALPHA_L = 0.85
@@ -14,6 +16,9 @@ ALPHA_U = 1.20
 ALPHA_M_LOCAL = 0.20
 ALPHA_M_GLOBAL = 0.05
 M_GLOBAL_REBOOT = 100
+
+# デバッグ用フラグ
+DEBUG = False  # Trueにすると詳細ログが出力される
 
 # --- 数値計算基盤クラス (より堅牢な実装) ---
 class NumericalUtils:
@@ -37,6 +42,14 @@ class NumericalUtils:
             eigenvals[eigenvals < epsilon] = epsilon
             return eigenvecs @ np.diag(1.0 / np.sqrt(eigenvals)) @ eigenvecs.T
         except np.linalg.LinAlgError: return np.eye(matrix.shape[0])
+
+    @staticmethod
+    def safe_norm(matrix: np.ndarray, ord=2) -> float:
+        """行列のノルムを安全に計算"""
+        try:
+            return np.linalg.norm(matrix, ord)
+        except Exception:
+            return np.inf  # 数値異常時は発散扱い
 
     @staticmethod
     def mirror_boundary_mapping(x: np.ndarray, bounds: np.ndarray) -> np.ndarray:
@@ -195,11 +208,6 @@ class Firework:
         if sparks.shape[0] == 0:
             return
         
-        # 古いパラメータを保存（大域花火の学習率適用用）
-        old_mean = self.mean.copy()
-        old_covariance = self.covariance.copy()
-        old_scale = self.scale
-        
         # 重みの計算
         weights = self.compute_recombination_weights(fitness_values)
         mu_eff = 1.0 / (np.sum(weights**2) + 1e-10)
@@ -264,13 +272,14 @@ class Firework:
                 # エラー時はスケール更新をスキップ
                 pass
         
-        # 大域花火の場合は学習率を適用（論文通り）
-        if self.firework_type == 'global' and 'cg' in self.learning_rates:
-            cg = self.learning_rates['cg']
-            self.mean = cg * new_mean + (1 - cg) * old_mean
-            self.covariance = cg * new_covariance + (1 - cg) * old_covariance
-            self.scale = cg * new_scale + (1 - cg) * old_scale
+        # パラメータの更新（グローバル花火の場合はブレンドしない）
+        if self.firework_type == 'global':
+            # 論文通りの実装：ブレンドなし
+            self.mean = new_mean
+            self.covariance = new_covariance
+            self.scale = new_scale
         else:
+            # ローカル花火はそのまま更新
             self.mean = new_mean
             self.covariance = new_covariance
             self.scale = new_scale
@@ -322,15 +331,15 @@ class Firework:
         """再起動条件のチェック"""
         restart_reasons = []
         
-        # 適応度が収束
+        # 適応度が収束（EPSILON_Vを使用）
         if len(self.recent_fitness_history) > 10:
-            if np.std(self.recent_fitness_history[-10:]) <= 1e-10:
+            if np.std(self.recent_fitness_history[-10:]) <= EPSILON_V:
                 restart_reasons.append("fitness_converged")
         
-        # 位置が収束（安全な計算）
+        # 位置が収束（EPSILON_Pを使用）
         try:
             cov_norm = NumericalUtils.safe_norm(self.covariance)
-            if self.scale * cov_norm <= 1e-5:
+            if self.scale * cov_norm <= EPSILON_P:
                 restart_reasons.append("position_converged")
         except:
             # エラー時は収束したとみなす
@@ -499,19 +508,30 @@ class CollaborationManager:
         return a1, a2
     
     def _select_feature_points(self, firework: Firework, dividing_points: Dict, 
-                              fireworks: List[Firework]) -> List[np.ndarray]:
+                          fireworks: List[Firework]) -> List[np.ndarray]:
         """特徴点を選択"""
         potential_points = []
         
-        for other_fw in fireworks:
-            if other_fw.firework_id == firework.firework_id:
-                continue
-            
+        # 計算量を制限
+        max_other_fireworks = min(len(fireworks) - 1, 10)  # 最大10個の花火と比較
+        other_fireworks = [fw for fw in fireworks if fw.firework_id != firework.firework_id]
+    
+        if len(other_fireworks) > max_other_fireworks:
+            # ランダムにサンプリング
+            indices = np.random.choice(len(other_fireworks), max_other_fireworks, replace=False)
+            other_fireworks = [other_fireworks[i] for i in indices]
+        
+        for other_fw in other_fireworks:
             key = (firework.firework_id, other_fw.firework_id)
             if key not in dividing_points:
                 continue
             
             w = dividing_points[key]
+            
+            # wが異常値の場合はスキップ
+            if not np.isfinite(w) or abs(w) > 100:
+                continue
+                
             distance = np.linalg.norm(firework.mean - other_fw.mean)
             
             if distance > self.min_distance:
@@ -519,16 +539,32 @@ class CollaborationManager:
                 a_self, _ = self._compute_sensitivity_factors(firework, other_fw)
                 
                 # 新しい半径（オーバーフロー防止）
-                if firework.firework_type == 'local':
-                    r_new = r * np.exp(np.clip(a_self * w, -10, 10))
-                else:
-                    r_new = r * np.exp(np.clip(-a_self * w, -10, 10))
+                try:
+                    if firework.firework_type == 'local':
+                        exp_arg = np.clip(a_self * w, -10, 10)
+                        r_new = r * np.exp(exp_arg)
+                    else:
+                        exp_arg = np.clip(-a_self * w, -10, 10)
+                        r_new = r * np.exp(exp_arg)
+                        
+                    # 半径が異常値の場合はスキップ
+                    if not np.isfinite(r_new) or r_new <= 0 or r_new > 1e10:
+                        continue
+                        
+                except (OverflowError, FloatingPointError):
+                    continue
                 
                 direction = (other_fw.mean - firework.mean) / distance
                 potential_points.append(firework.mean + r_new * direction)
         
         if not potential_points:
             return []
+        
+        # 最大でTAU個まで
+        if len(potential_points) > TAU * 2:
+            # ランダムサンプリング
+            indices = np.random.choice(len(potential_points), TAU * 2, replace=False)
+            potential_points = [potential_points[i] for i in indices]
         
         # 距離に基づいて選択
         distances = [np.linalg.norm(p - firework.mean) for p in potential_points]
@@ -557,6 +593,7 @@ class CollaborationManager:
             clipped_points.append(point)
         
         return clipped_points
+
     
     def _adapt_to_feature_points(self, firework: Firework, feature_points: List[np.ndarray]) -> None:
         """特徴点への適応"""
@@ -639,7 +676,7 @@ class HCFWA:
                  problem: BaseProblem, 
                  num_local_fireworks: int = 4,
                  sparks_per_firework: int = None,
-                 max_evaluations: int = 100000): # ★評価回数のデフォルトを現実的な値に変更
+                 max_evaluations: int = 100000):
         
         self.problem = problem
         self.dimension = problem.dimension
@@ -656,52 +693,60 @@ class HCFWA:
         self._reset_state()
 
     def _reset_state(self):
+        """状態をリセット"""
         self.best_fitness = float('inf')
         self.best_solution = None
         self.global_evaluation_count = 0
         self.iteration_count = 0
         self.global_stagnation_count = 0
         self.fitness_history = []
-        # 各種クラスのインスタンス化
-        self.fireworks = [Firework(self.dimension, self.bounds, 'local' if i > 0 else 'global', i, self.num_local_fireworks) for i in range(self.num_local_fireworks + 1)]
+        
+        # 花火の初期化
+        self.fireworks = []
+        # グローバル花火（ID=0）
+        self.fireworks.append(Firework(self.dimension, self.bounds, 'global', 0, self.num_local_fireworks))
+        # ローカル花火（ID=1,2,3...）
+        for i in range(self.num_local_fireworks):
+            self.fireworks.append(Firework(self.dimension, self.bounds, 'local', i + 1, self.num_local_fireworks))
+        
+        # 協調マネージャーの初期化
         self.collaboration_manager = CollaborationManager(self.dimension)
     
-    
-    def _initialize_fireworks(self) -> None:
-        """花火の初期化"""
-        self.global_firework = Firework(
-            self.dimension, self.bounds, 'global', 0, self.num_local_fireworks
-        )
-        
-        self.local_fireworks = [
-            Firework(self.dimension, self.bounds, 'local', i + 1, self.num_local_fireworks)
-            for i in range(self.num_local_fireworks)
-        ]
-        
-        self.all_fireworks = [self.global_firework] + self.local_fireworks
-    
-    def _reset_optimization_state(self) -> None:
-        """最適化状態のリセット"""
-        self.best_fitness = float('inf')
-        self.best_solution = None
-        self.global_evaluation_count = 0
-        self.iteration_count = 0
-        self.global_stagnation_count = 0
-        self.fitness_history = []
-        self._initialize_fireworks()
-    
     def optimize(self) -> Tuple[np.ndarray, float, List[float]]:
+        """最適化を実行"""
         self._reset_state()
         objective_function = self.problem.evaluate
         
+        # タイムアウト設定（5分）
+        start_time = time.time()
+        timeout = 300  # 5分
+        
         while self.global_evaluation_count < self.max_evaluations:
+            # タイムアウトチェック
+            if time.time() - start_time > timeout:
+                warnings.warn(f"Optimization timed out after {timeout} seconds")
+                break
+                
+            # デバッグ情報
+            if DEBUG and self.iteration_count % 10 == 0:
+                print(f"Iteration: {self.iteration_count}, Evaluations: {self.global_evaluation_count}, Best: {self.best_fitness:.6e}")
+                
             iteration_start_fitness = self.best_fitness
             all_sparks_data = []
 
             # スパーク生成と評価
             for fw in self.fireworks:
-                if self.global_evaluation_count >= self.max_evaluations: break
-                sparks = fw.generate_sparks(self.sparks_per_firework)
+                if self.global_evaluation_count >= self.max_evaluations: 
+                    break
+                    
+                # 残り評価回数を考慮
+                remaining_evals = self.max_evaluations - self.global_evaluation_count
+                num_sparks = min(self.sparks_per_firework, remaining_evals)
+                
+                if num_sparks <= 0:
+                    break
+                    
+                sparks = fw.generate_sparks(num_sparks)
                 fitness_values = np.array([objective_function(s) for s in sparks])
                 self.global_evaluation_count += len(sparks)
                 all_sparks_data.append({'sparks': sparks, 'fitness': fitness_values, 'firework': fw})
@@ -718,21 +763,47 @@ class HCFWA:
             for data in all_sparks_data:
                 data['firework'].update_parameters(data['sparks'], data['fitness'])
 
-            # 協調と再起動
-            self.collaboration_manager.execute_collaboration(self.fireworks)
+            # 協調処理（エラーハンドリング強化）
+            try:
+                # 協調処理の実行時間を制限
+                collab_start = time.time()
+                self.collaboration_manager.execute_collaboration(self.fireworks)
+                
+                if time.time() - collab_start > 1.0:  # 1秒以上かかったら警告
+                    if DEBUG:
+                        print(f"Warning: Collaboration took {time.time() - collab_start:.2f} seconds")
+                        
+            except Exception as e:
+                warnings.warn(f"Collaboration failed: {e}")
+                
+            # 再起動チェック
             for fw in self.fireworks:
-                should_restart, _ = fw.check_restart_conditions(self.fireworks)
-                if should_restart: fw.restart()
+                should_restart, reasons = fw.check_restart_conditions(self.fireworks)
+                if should_restart: 
+                    if DEBUG:
+                        print(f"Firework {fw.firework_id} restarting: {reasons}")
+                    fw.restart()
             
             # 全体停滞チェック
-            if self.best_fitness >= iteration_start_fitness: self.global_stagnation_count += 1
-            else: self.global_stagnation_count = 0
+            if self.best_fitness >= iteration_start_fitness * 0.9999:  # わずかな改善も認める
+                self.global_stagnation_count += 1
+            else: 
+                self.global_stagnation_count = 0
             
-            if self.global_stagnation_count >= M_GLOBAL_REBOOT:
-                # 全体リブート処理
+            # 全体リブートの頻度を下げる
+            if self.global_stagnation_count >= M_GLOBAL_REBOOT * 2:  # より厳しい条件に
+                if DEBUG:
+                    print(f"Global reboot at iteration {self.iteration_count}")
                 self._reset_state()
+                continue  # 次のイテレーションへ
 
             self.fitness_history.append(self.best_fitness)
             self.iteration_count += 1
+            
+            # 早期終了条件
+            if self.best_fitness < 1e-10:  # 十分良い解が見つかった
+                if DEBUG:
+                    print(f"Early termination: found good solution {self.best_fitness:.6e}")
+                break
 
         return self.best_solution, self.best_fitness, self.fitness_history
