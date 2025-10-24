@@ -426,7 +426,8 @@ class HCFWA:
         self.max_evaluations = max_evaluations
         
         if sparks_per_firework is None:
-            self.sparks_per_firework = max(5, int(4 + np.floor(3 * np.log(self.dimension))))
+            # self.sparks_per_firework = max(5, int(4 + np.floor(3 * np.log(self.dimension))))
+            self.sparks_per_firework = max(10, int(6 * self.dimension))
         else:
             self.sparks_per_firework = sparks_per_firework
         
@@ -462,6 +463,10 @@ class HCFWA:
         for _ in range(num_initial):
             sol = self.fireworks[0].rng.uniform(self.bounds[:, 0], self.bounds[:, 1])
             initial_solutions.append(sol)
+            
+        # LHS系統的初期化
+        # num_initial = max(100, self.dimension * 15)  # 150個
+        # initial_solutions = latin_hypercube_sampling(dimension, bounds, num_initial, rng)
         
         initial_fitnesses = [self.problem.evaluate(sol) for sol in initial_solutions]
         self.global_evaluation_count += num_initial
