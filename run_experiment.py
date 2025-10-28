@@ -5,7 +5,7 @@ import pandas as pd # ★pandasをインポート
 import os # ★osをインポート
 
 # 作成したパッケージからクラスをインポート
-from problems import SphereFunction, RosenbrockFunction
+from problems import SphereFunction, RosenbrockFunction, AckleyFunction
 from algorithms import PSO,EFWA, DynFWA, HCFWA
 
 # 実行可能なアルゴリズムを管理する辞書
@@ -20,6 +20,7 @@ ALGORITHM_MAP = {
 PROBLEM_MAP = {
     'sphere': SphereFunction,
     'rosenbrock': RosenbrockFunction,
+    'ackley': AckleyFunction,
 }
 
 def main():

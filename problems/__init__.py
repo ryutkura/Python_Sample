@@ -6,5 +6,6 @@
 from .base_problem import BaseProblem
 from .sphere import SphereFunction
 from .rosenbrock import RosenbrockFunction 
+from .ackley import AckleyFunction 
 # 新しい関数（例: RosenbrockFunction）を追加したら、ここにも追記します
 # from .rosenbrock import RosenbrockFunction
