@@ -32,11 +32,72 @@ def main():
     
     args = parser.parse_args()
     
-    ProblemClass = PROBLEM_MAP[args.problem]
-    problem = ProblemClass(dimension=args.dim, shift_value=0.0)
+    # ProblemClass = PROBLEM_MAP[args.problem]
+    # problem = ProblemClass(dimension=args.dim, shift_value=0.0)
 
     # problem = SphereFunction(dimension=args.dim, shift_value=0.0)
     AlgorithmClass = ALGORITHM_MAP[args.algorithm]
+    
+    # === (ここから改造ブロック) ===
+    import importlib # ★動的インポートのためのライブラリ
+    from problems.base_problem import BaseProblem # ★共通ルール(BaseProblem)をインポート
+
+    # PROBLEM_MAP = { ... } の行は削除（またはコメントアウト）してOKです
+
+    try:
+        problem_name_str = args.problem  # 例: 'sphere' または 'cec2017/f1'
+
+        if '/' in problem_name_str:
+            # --- パターンA: "スイート形式" (例: cec2017/f1) の場合 ---
+            
+            # 1. 'cec2017' と 'f1' に分割
+            suite_name, func_name = problem_name_str.split('/')
+            
+            # 2. 読み込むファイル名を指定 (例: 'problems.cec2017')
+            #    (problems/cec2017.py を指す)
+            module_name = f"problems.{suite_name}"
+            
+            # 3. 読み込むクラス名を指定 (例: 'CEC2017_F1')
+            class_name = f"{suite_name.upper()}_{func_name.upper()}"
+
+        else:
+            # --- パターンB: "単一ファイル形式" (例: sphere) の場合 ---
+            
+            # 1. 読み込むファイル名を指定 (例: 'problems.sphere')
+            #    (problems/sphere.py を指す)
+            module_name = f"problems.{problem_name_str}"
+            
+            # 2. 読み込むクラス名を指定 (例: 'SphereFunction')
+            #    (これは既存のファイル規約に合わせる)
+            if problem_name_str == 'sphere':
+                class_name = 'SphereFunction'
+            elif problem_name_str == 'rosenbrock':
+                class_name = 'RosenbrockFunction'
+            else:
+                # 今後、他の単一ファイルを追加する場合の汎用ルール (例: 'my_func' -> 'My_funcFunction')
+                class_name = problem_name_str.capitalize() + "Function"
+
+        # 4. モジュール(ファイル)を動的にインポート
+        # (例: 'problems.cec2017' または 'problems.sphere' を読み込む)
+        module = importlib.import_module(module_name)
+        
+        # 5. モジュールからクラス(設計図)を取得
+        # (例: 'CEC2017_F1' または 'SphereFunction' クラスを取り出す)
+        ProblemClass = getattr(module, class_name)
+
+        # 6. 安全チェック (BaseProblemを継承しているか)
+        if not issubclass(ProblemClass, BaseProblem):
+            raise TypeError(f"{class_name} does not inherit from BaseProblem")
+
+        # 7. インスタンス化 (実体を作る)
+        problem = ProblemClass(dimension=args.dim)
+
+    except (ImportError, AttributeError, TypeError) as e:
+        print(f"--- エラー: 問題 '{args.problem}' の読み込みに失敗しました ---")
+        print(f"詳細: {e}")
+        print("指定した問題名、ファイル構造、クラス名が規約通りか確認してください。")
+        exit()
+    # === (ここまで改造ブロック) ===
 
     print("======================================")
     print(f"Algorithm: {args.algorithm.upper()}")
