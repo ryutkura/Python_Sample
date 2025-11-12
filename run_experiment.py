@@ -26,7 +26,9 @@ PROBLEM_MAP = {
 def main():
     parser = argparse.ArgumentParser(description="Run an optimization experiment.")
     parser.add_argument('--algorithm', type=str, required=True, choices=ALGORITHM_MAP.keys(), help='The algorithm to run.')
-    parser.add_argument('--problem', type=str, required=True, choices=PROBLEM_MAP.keys(), help='The problem function to optimize.')
+    # parser.add_argument('--problem', type=str, required=True, choices=PROBLEM_MAP.keys(), help='The problem function to optimize.')
+    # choices=PROBLEM_MAP.keys() の部分を削除する
+    parser.add_argument('--problem', type=str, required=True, help='The problem function to optimize (e.g., sphere, cec2017/f1).')
     parser.add_argument('--dim', type=int, default=20, help='Dimension of the problem.')
     parser.add_argument('--runs', type=int, default=5, help='Number of runs.')
     
