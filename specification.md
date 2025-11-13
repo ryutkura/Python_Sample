@@ -195,3 +195,32 @@ python run_experiment.py --algorithm new_algo --problem sphere --dim 10 --runs 3
 ```
 
 実験が正常に完了し、結果が出力されれば、システムへの統合は成功です。
+
+
+新しい実行コマンド
+この改造により、実行コマンドは以下のようになります。
+
+例1: pso と efwa で、cec2017 の関数（F1, F3〜F30）をすべて実行（シフト・回転なし）
+
+```Bash
+
+python run_all_experiments.py --algorithms pso efwa --problem_folder cec2017 --no_shift --no_rotate
+```
+例2: 全アルゴリズムで、sphere と cec2017/f1 だけ実行（標準設定）
+```Bash
+
+# --problem_folder を使わなければ、従来通り --problems で個別に指定できます
+python run_all_experiments.py --problems sphere cec2017/f1
+```
+例3: 全アルゴリズムで、problems フォルダ内のすべての問題を実行
+
+```Bash
+# --problems も --problem_folder も指定しない
+python run_all_experiments.py
+```
+
+例4: 全アルゴリズムで、問題を指定、その他項目も細かく設定したコマンド
+```Bash
+# 次元数や試行回数、シフト、回転の指定をする
+python run_all_experiments.py --problems sphere cec2017/f1 --dim 10 --runs 3 --no_shift --no_rotate
+```
