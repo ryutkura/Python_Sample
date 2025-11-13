@@ -31,6 +31,8 @@ def main():
     parser.add_argument('--problem', type=str, required=True, help='The problem function to optimize (e.g., sphere, cec2017/f1).')
     parser.add_argument('--dim', type=int, default=20, help='Dimension of the problem.')
     parser.add_argument('--runs', type=int, default=5, help='Number of runs.')
+    parser.add_argument('--no_shift', action='store_true', help='(CEC2017 only) Disable shift transformation')
+    parser.add_argument('--no_rotate', action='store_true', help='(CEC2017 only) Disable rotation transformation')
     
     args = parser.parse_args()
     
@@ -92,7 +94,14 @@ def main():
             raise TypeError(f"{class_name} does not inherit from BaseProblem")
 
         # 7. インスタンス化 (実体を作る)
-        problem = ProblemClass(dimension=args.dim)
+        if 'cec2017' in problem_name_str:
+            # CEC関数の場合は、フラグを渡す
+            problem = ProblemClass(dimension=args.dim, 
+                                 shift_flag=not args.no_shift, 
+                                 rotate_flag=not args.no_rotate)
+        else:
+            # それ以外(sphereなど)の場合は、従来通り
+            problem = ProblemClass(dimension=args.dim)
 
     except (ImportError, AttributeError, TypeError) as e:
         print(f"--- エラー: 問題 '{args.problem}' の読み込みに失敗しました ---")

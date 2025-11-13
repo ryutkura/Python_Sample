@@ -645,175 +645,175 @@ def _hf10(x, nx, Os, Mr, SS, s_flag, r_flag):
 
 # --- Composition関数 (F21-F30) ---
 
-def _cf01(x, nx, Os, Mr, r_flag):
+def _cf01(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 1"""
     cf_num = 3
     delta = np.array([10, 20, 30])
     bias = np.array([0, 100, 200])
     fit = np.zeros(cf_num)
     
-    fit[0] = _rosenbrock_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
-    fit[1] = _ellips_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _rosenbrock_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
+    fit[1] = _ellips_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[1] = 10000 * fit[1] / 1e+10
-    fit[2] = _rastrigin_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[2] = _rastrigin_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf02(x, nx, Os, Mr, r_flag):
+def _cf02(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 2"""
     cf_num = 3
     delta = np.array([10, 20, 30])
     bias = np.array([0, 100, 200])
     fit = np.zeros(cf_num)
     
-    fit[0] = _rastrigin_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
-    fit[1] = _griewank_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _rastrigin_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
+    fit[1] = _griewank_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[1] = 1000 * fit[1] / 100
-    fit[2] = _schwefel_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[2] = _schwefel_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf03(x, nx, Os, Mr, r_flag):
+def _cf03(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 3"""
     cf_num = 4
     delta = np.array([10, 20, 30, 40])
     bias = np.array([0, 100, 200, 300])
     fit = np.zeros(cf_num)
     
-    fit[0] = _rosenbrock_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
-    fit[1] = _ackley_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _rosenbrock_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
+    fit[1] = _ackley_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[1] = 1000 * fit[1] / 100
-    fit[2] = _schwefel_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
-    fit[3] = _rastrigin_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[2] = _schwefel_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
+    fit[3] = _rastrigin_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf04(x, nx, Os, Mr, r_flag):
+def _cf04(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 4"""
     cf_num = 4
     delta = np.array([10, 20, 30, 40])
     bias = np.array([0, 100, 200, 300])
     fit = np.zeros(cf_num)
     
-    fit[0] = _ackley_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _ackley_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[0] = 1000 * fit[0] / 100
-    fit[1] = _ellips_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[1] = _ellips_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[1] = 10000 * fit[1] / 1e+10
-    fit[2] = _griewank_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[2] = _griewank_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[2] = 1000 * fit[2] / 100
-    fit[3] = _rastrigin_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[3] = _rastrigin_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf05(x, nx, Os, Mr, r_flag):
+def _cf05(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 5"""
     cf_num = 5
     delta = np.array([10, 20, 30, 40, 50])
     bias = np.array([0, 100, 200, 300, 400])
     fit = np.zeros(cf_num)
     
-    fit[0] = _rastrigin_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _rastrigin_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[0] = 10000 * fit[0] / 1e+3
-    fit[1] = _happycat_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[1] = _happycat_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[1] = 1000 * fit[1] / 1e+3
-    fit[2] = _ackley_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[2] = _ackley_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[2] = 1000 * fit[2] / 100
-    fit[3] = _discus_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[3] = _discus_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[3] = 10000 * fit[3] / 1e+10
-    fit[4] = _rosenbrock_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[4] = _rosenbrock_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf06(x, nx, Os, Mr, r_flag):
+def _cf06(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 6"""
     cf_num = 5
     delta = np.array([10, 20, 20, 30, 40])
     bias = np.array([0, 100, 200, 300, 400])
     fit = np.zeros(cf_num)
     
-    fit[0] = _escaffer6_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _escaffer6_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[0] = 10000 * fit[0] / 2e+7
-    fit[1] = _schwefel_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
-    fit[2] = _griewank_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[1] = _schwefel_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
+    fit[2] = _griewank_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[2] = 1000 * fit[2] / 100
-    fit[3] = _rosenbrock_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
-    fit[4] = _rastrigin_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[3] = _rosenbrock_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
+    fit[4] = _rastrigin_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[4] = 10000 * fit[4] / 1e+3
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf07(x, nx, Os, Mr, r_flag):
+def _cf07(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 7"""
     cf_num = 6
     delta = np.array([10, 20, 30, 40, 50, 60])
     bias = np.array([0, 100, 200, 300, 400, 500])
     fit = np.zeros(cf_num)
     
-    fit[0] = _hgbat_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _hgbat_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[0] = 10000 * fit[0] / 1000
-    fit[1] = _rastrigin_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[1] = _rastrigin_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[1] = 10000 * fit[1] / 1e+3
-    fit[2] = _schwefel_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[2] = _schwefel_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[2] = 10000 * fit[2] / 4e+3
-    fit[3] = _bent_cigar_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[3] = _bent_cigar_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[3] = 10000 * fit[3] / 1e+30
-    fit[4] = _ellips_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[4] = _ellips_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[4] = 10000 * fit[4] / 1e+10
-    fit[5] = _escaffer6_func(x, nx, Os[5*nx:6*nx], Mr[5].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[5] = _escaffer6_func(x, nx, Os[5*nx:6*nx], Mr[5].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[5] = 10000 * fit[5] / 2e+7
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf08(x, nx, Os, Mr, r_flag):
+def _cf08(x, nx, Os, Mr, s_flag, r_flag):
     """Composition Function 8"""
     cf_num = 6
     delta = np.array([10, 20, 30, 40, 50, 60])
     bias = np.array([0, 100, 200, 300, 400, 500])
     fit = np.zeros(cf_num)
     
-    fit[0] = _ackley_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[0] = _ackley_func(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[0] = 1000 * fit[0] / 100
-    fit[1] = _griewank_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[1] = _griewank_func(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[1] = 1000 * fit[1] / 100
-    fit[2] = _discus_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[2] = _discus_func(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[2] = 10000 * fit[2] / 1e+10
-    fit[3] = _rosenbrock_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
-    fit[4] = _happycat_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[3] = _rosenbrock_func(x, nx, Os[3*nx:4*nx], Mr[3].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
+    fit[4] = _happycat_func(x, nx, Os[4*nx:5*nx], Mr[4].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[4] = 1000 * fit[4] / 1e+3
-    fit[5] = _escaffer6_func(x, nx, Os[5*nx:6*nx], Mr[5].reshape(nx, nx) if Mr.ndim == 3 else Mr, 1, r_flag)
+    fit[5] = _escaffer6_func(x, nx, Os[5*nx:6*nx], Mr[5].reshape(nx, nx) if Mr.ndim == 3 else Mr, s_flag, r_flag)
     fit[5] = 10000 * fit[5] / 2e+7
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf09(x, nx, Os, Mr, SS, r_flag):
+def _cf09(x, nx, Os, Mr, SS, s_flag, r_flag):
     """Composition Function 9"""
     cf_num = 3
     delta = np.array([10, 30, 50])
     bias = np.array([0, 100, 200])
     fit = np.zeros(cf_num)
     
-    fit[0] = _hf05(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[0] if SS.ndim == 2 else SS, 1, r_flag)
-    fit[1] = _hf06(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[1] if SS.ndim == 2 else SS, 1, r_flag)
+    fit[0] = _hf05(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[0] if SS.ndim == 2 else SS, s_flag, r_flag)
+    fit[1] = _hf06(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[1] if SS.ndim == 2 else SS, s_flag, r_flag)
     fit[2] = _hf07(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[2] if SS.ndim == 2 else SS, 1, r_flag)
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
-def _cf10(x, nx, Os, Mr, SS, r_flag):
+def _cf10(x, nx, Os, Mr, SS, s_flag, r_flag):
     """Composition Function 10"""
     cf_num = 3
     delta = np.array([10, 30, 50])
     bias = np.array([0, 100, 200])
     fit = np.zeros(cf_num)
     
-    fit[0] = _hf05(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[0] if SS.ndim == 2 else SS, 1, r_flag)
-    fit[1] = _hf08(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[1] if SS.ndim == 2 else SS, 1, r_flag)
-    fit[2] = _hf09(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[2] if SS.ndim == 2 else SS, 1, r_flag)
+    fit[0] = _hf05(x, nx, Os[0:nx], Mr[0].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[0] if SS.ndim == 2 else SS, s_flag, r_flag)
+    fit[1] = _hf08(x, nx, Os[nx:2*nx], Mr[1].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[1] if SS.ndim == 2 else SS, s_flag, r_flag)
+    fit[2] = _hf09(x, nx, Os[2*nx:3*nx], Mr[2].reshape(nx, nx) if Mr.ndim == 3 else Mr, SS[2] if SS.ndim == 2 else SS, s_flag, r_flag)
     
     return _cf_cal(x, nx, Os, delta, bias, fit, cf_num)
 
 # --- メインディスパッチャ ---
 
-def _cec17_test_func(x, nx, func_num):
+def _cec17_test_func(x, nx, func_num, s_flag, r_flag):
     """CEC2017テスト関数のメインディスパッチャ"""
     data = _load_cec_data(func_num, nx)
     OShift = data['OShift']
@@ -821,35 +821,35 @@ def _cec17_test_func(x, nx, func_num):
     SS = data['SS']
 
     func_map = {
-        1: lambda: _bent_cigar_func(x, nx, OShift, M, 1, 1) + 100.0,
-        3: lambda: _zakharov_func(x, nx, OShift, M, 1, 1) + 300.0,
-        4: lambda: _rosenbrock_func(x, nx, OShift, M, 1, 1) + 400.0,
-        5: lambda: _rastrigin_func(x, nx, OShift, M, 1, 1) + 500.0,
-        6: lambda: _schaffer_F7_func(x, nx, OShift, M, 1, 1) + 600.0,
-        7: lambda: _bi_rastrigin_func(x, nx, OShift, M, 1, 1) + 700.0,
-        8: lambda: _step_rastrigin_func(x, nx, OShift, M, 1, 1) + 800.0,
-        9: lambda: _levy_func(x, nx, OShift, M, 1, 1) + 900.0,
-        10: lambda: _schwefel_func(x, nx, OShift, M, 1, 1) + 1000.0,
-        11: lambda: _hf01(x, nx, OShift, M, SS, 1, 1) + 1100.0,
-        12: lambda: _hf02(x, nx, OShift, M, SS, 1, 1) + 1200.0,
-        13: lambda: _hf03(x, nx, OShift, M, SS, 1, 1) + 1300.0,
-        14: lambda: _hf04(x, nx, OShift, M, SS, 1, 1) + 1400.0,
-        15: lambda: _hf05(x, nx, OShift, M, SS, 1, 1) + 1500.0,
-        16: lambda: _hf06(x, nx, OShift, M, SS, 1, 1) + 1600.0,
-        17: lambda: _hf07(x, nx, OShift, M, SS, 1, 1) + 1700.0,
-        18: lambda: _hf08(x, nx, OShift, M, SS, 1, 1) + 1800.0,
-        19: lambda: _hf09(x, nx, OShift, M, SS, 1, 1) + 1900.0,
-        20: lambda: _hf10(x, nx, OShift, M, SS, 1, 1) + 2000.0,
-        21: lambda: _cf01(x, nx, OShift, M, 1) + 2100.0,
-        22: lambda: _cf02(x, nx, OShift, M, 1) + 2200.0,
-        23: lambda: _cf03(x, nx, OShift, M, 1) + 2300.0,
-        24: lambda: _cf04(x, nx, OShift, M, 1) + 2400.0,
-        25: lambda: _cf05(x, nx, OShift, M, 1) + 2500.0,
-        26: lambda: _cf06(x, nx, OShift, M, 1) + 2600.0,
-        27: lambda: _cf07(x, nx, OShift, M, 1) + 2700.0,
-        28: lambda: _cf08(x, nx, OShift, M, 1) + 2800.0,
-        29: lambda: _cf09(x, nx, OShift, M, SS, 1) + 2900.0,
-        30: lambda: _cf10(x, nx, OShift, M, SS, 1) + 3000.0,
+        1: lambda: _bent_cigar_func(x, nx, OShift, M, s_flag, r_flag) + 100.0,
+        3: lambda: _zakharov_func(x, nx, OShift, M, s_flag, r_flag) + 300.0,
+        4: lambda: _rosenbrock_func(x, nx, OShift, M, s_flag, r_flag) + 400.0,
+        5: lambda: _rastrigin_func(x, nx, OShift, M, s_flag, r_flag) + 500.0,
+        6: lambda: _schaffer_F7_func(x, nx, OShift, M, s_flag, r_flag) + 600.0,
+        7: lambda: _bi_rastrigin_func(x, nx, OShift, M, s_flag, r_flag) + 700.0,
+        8: lambda: _step_rastrigin_func(x, nx, OShift, M, s_flag, r_flag) + 800.0,
+        9: lambda: _levy_func(x, nx, OShift, M, s_flag, r_flag) + 900.0,
+        10: lambda: _schwefel_func(x, nx, OShift, M, s_flag, r_flag) + 1000.0,
+        11: lambda: _hf01(x, nx, OShift, M, SS, s_flag, r_flag) + 1100.0,
+        12: lambda: _hf02(x, nx, OShift, M, SS, s_flag, r_flag) + 1200.0,
+        13: lambda: _hf03(x, nx, OShift, M, SS, s_flag, r_flag) + 1300.0,
+        14: lambda: _hf04(x, nx, OShift, M, SS, s_flag, r_flag) + 1400.0,
+        15: lambda: _hf05(x, nx, OShift, M, SS, s_flag, r_flag) + 1500.0,
+        16: lambda: _hf06(x, nx, OShift, M, SS, s_flag, r_flag) + 1600.0,
+        17: lambda: _hf07(x, nx, OShift, M, SS, s_flag, r_flag) + 1700.0,
+        18: lambda: _hf08(x, nx, OShift, M, SS, s_flag, r_flag) + 1800.0,
+        19: lambda: _hf09(x, nx, OShift, M, SS, s_flag, r_flag) + 1900.0,
+        20: lambda: _hf10(x, nx, OShift, M, SS, s_flag, r_flag) + 2000.0,
+        21: lambda: _cf01(x, nx, OShift, M, s_flag, r_flag) + 2100.0,
+        22: lambda: _cf02(x, nx, OShift, M, s_flag, r_flag) + 2200.0,
+        23: lambda: _cf03(x, nx, OShift, M, s_flag, r_flag) + 2300.0,
+        24: lambda: _cf04(x, nx, OShift, M, s_flag, r_flag) + 2400.0,
+        25: lambda: _cf05(x, nx, OShift, M, s_flag, r_flag) + 2500.0,
+        26: lambda: _cf06(x, nx, OShift, M, s_flag, r_flag) + 2600.0,
+        27: lambda: _cf07(x, nx, OShift, M, s_flag, r_flag) + 2700.0,
+        28: lambda: _cf08(x, nx, OShift, M, s_flag, r_flag) + 2800.0,
+        29: lambda: _cf09(x, nx, OShift, M, SS, s_flag, r_flag) + 2900.0,
+        30: lambda: _cf10(x, nx, OShift, M, SS, s_flag, r_flag) + 3000.0,
     }
     
     if func_num == 2:
@@ -863,262 +863,320 @@ def _cec17_test_func(x, nx, func_num):
 # --- BaseProblemを継承した公開クラス群 ---
 
 class CEC2017_F1(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 100.0)
         self.func_num = 1
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F3(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 300.0)
         self.func_num = 3
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F4(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 400.0)
         self.func_num = 4
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F5(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 500.0)
         self.func_num = 5
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F6(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 600.0)
         self.func_num = 6
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F7(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 700.0)
         self.func_num = 7
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F8(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 800.0)
         self.func_num = 8
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F9(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 900.0)
         self.func_num = 9
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F10(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1000.0)
         self.func_num = 10
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F11(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1100.0)
         self.func_num = 11
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F12(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1200.0)
         self.func_num = 12
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F13(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1300.0)
         self.func_num = 13
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F14(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1400.0)
         self.func_num = 14
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F15(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1500.0)
         self.func_num = 15
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F16(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1600.0)
         self.func_num = 16
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F17(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1700.0)
         self.func_num = 17
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F18(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1800.0)
         self.func_num = 18
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F19(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 1900.0)
         self.func_num = 19
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F20(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2000.0)
         self.func_num = 20
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F21(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2100.0)
         self.func_num = 21
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F22(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2200.0)
         self.func_num = 22
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F23(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2300.0)
         self.func_num = 23
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F24(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2400.0)
         self.func_num = 24
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F25(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2500.0)
         self.func_num = 25
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F26(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2600.0)
         self.func_num = 26
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F27(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2700.0)
         self.func_num = 27
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F28(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2800.0)
         self.func_num = 28
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F29(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 2900.0)
         self.func_num = 29
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
 
 class CEC2017_F30(BaseProblem):
-    def __init__(self, dimension: int, shift_value: float = 0.0):
+    def __init__(self, dimension: int, shift_value: float = 0.0, shift_flag: bool = True, rotate_flag: bool = True):
         super().__init__(dimension, -100.0, 100.0, 3000.0)
         self.func_num = 30
+        self.s_flag = 1 if shift_flag else 0  # ★追加 (True/False を 1/0 に変換)
+        self.r_flag = 1 if rotate_flag else 0  # ★追加
         _load_cec_data(self.func_num, dimension)
 
     def evaluate(self, position: np.ndarray) -> float:
-        return _cec17_test_func(position, self.dimension, self.func_num)
+        return _cec17_test_func(position, self.dimension, self.func_num, self.s_flag, self.r_flag)
