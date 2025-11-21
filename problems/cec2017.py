@@ -187,7 +187,7 @@ def _cf_cal(x, nx, Os, delta, bias, fit, cf_num):
 
 # --- 基本関数 ---
 
-def _sphere_func(x, nx, Os, Mr, s_flag, r_flag):
+def _sphere_fudnc(x, nx, Os, Mr, s_flag, r_flag):
     """Sphere関数"""
     z = _sr_func(x, Os, Mr, 1.0, s_flag, r_flag, nx)
     return np.sum(z**2)
