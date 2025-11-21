@@ -1,3 +1,4 @@
+import sys
 import subprocess
 import time
 import argparse
@@ -105,7 +106,8 @@ def main():
                 print("="*70)
                 
                 command = [
-                    'python',
+                    sys.executable,
+                    # 'python',
                     'run_experiment.py',
                     '--algorithm', algo,
                     '--problem', prob,
