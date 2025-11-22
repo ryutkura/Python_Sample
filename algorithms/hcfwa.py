@@ -364,8 +364,8 @@ class Firework:
 
     def restart(self) -> None:
         """花火の再初期化"""
-        if DEBUG:
-            print(f"    Restarting FW {self.firework_id} ({self.firework_type})")
+        # if DEBUG:
+        #     print(f"    Restarting FW {self.firework_id} ({self.firework_type})")
         
         self.mean = self._initialize_mean()
         self.covariance = np.eye(self.dimension)
@@ -408,8 +408,9 @@ class CollaborationManager:
                     fw.mean = np.clip(fw.mean, fw.bounds[:, 0], fw.bounds[:, 1])
                     
         except Exception as e:
-            if DEBUG:
-                warnings.warn(f"Collaboration error: {e}")
+            pass
+            # if DEBUG:
+            #     warnings.warn(f"Collaboration error: {e}")
 
 # --- HCFWAメインクラス（評価回数保持版） ---
 class HCFWA:
@@ -455,8 +456,8 @@ class HCFWA:
 
     def _perform_initial_evaluation(self):
         """初期評価の実行"""
-        if DEBUG:
-            print("Performing initial evaluation...")
+        # if DEBUG:
+        #     print("Performing initial evaluation...")
         
         num_initial = max(20, self.dimension * 2)
         initial_solutions = []
@@ -480,14 +481,14 @@ class HCFWA:
             fw.best_fitness_fw = self.best_fitness
             fw.best_solution_fw = self.best_solution.copy()
         
-        if DEBUG:
-            print(f"Initial best fitness: {self.best_fitness:.6e}")
+        # if DEBUG:
+        #     print(f"Initial best fitness: {self.best_fitness:.6e}")
 
     def _global_reboot(self):
         """グローバルリブート（評価回数保持版）"""
-        if DEBUG:
-            print(f"  GLOBAL REBOOT at Iter {self.iteration_count}, Evals {self.global_evaluation_count}")
-            print(f"  Preserving best: {self.best_fitness:.6e}")
+        # if DEBUG:
+        #     print(f"  GLOBAL REBOOT at Iter {self.iteration_count}, Evals {self.global_evaluation_count}")
+        #     print(f"  Preserving best: {self.best_fitness:.6e}")
         
         # 最良解バックアップ
         best_sol_backup = self.best_solution.copy() if self.best_solution is not None else None
@@ -518,8 +519,8 @@ class HCFWA:
         while self.global_evaluation_count < self.max_evaluations:
             # タイムアウトチェック
             if time.time() - start_time > timeout:
-                if DEBUG:
-                    print(f"Timeout after {timeout} seconds")
+                # if DEBUG:
+                #     print(f"Timeout after {timeout} seconds")
                 break
             
             # 進捗監視
@@ -558,8 +559,8 @@ class HCFWA:
                     self.best_fitness = fitness_values[best_idx]
                     self.best_solution = sparks[best_idx].copy()
                     iteration_improved = True
-                    if DEBUG and self.iteration_count % 10 == 0:
-                        print(f"    New best: {self.best_fitness:.6e}")
+                    # if DEBUG and self.iteration_count % 10 == 0:
+                    #     print(f"    New best: {self.best_fitness:.6e}")
                 
                 # パラメータ更新
                 fw.update_parameters(sparks, fitness_values)
@@ -567,8 +568,8 @@ class HCFWA:
             # 進捗がない場合の緊急処置
             if self.global_evaluation_count == iter_evals_before:
                 stuck_iters += 1
-                if DEBUG:
-                    print(f"    Stuck iteration {stuck_iters}, forcing evaluation...")
+                # if DEBUG:
+                #     print(f"    Stuck iteration {stuck_iters}, forcing evaluation...")
                 
                 # 緊急サンプリング
                 for fw in self.fireworks:
@@ -596,16 +597,17 @@ class HCFWA:
                 try:
                     self.collaboration_manager.execute_collaboration(self.fireworks)
                 except Exception as e:
-                    if DEBUG:
-                        warnings.warn(f"Collaboration failed: {e}")
+                    pass
+                    # if DEBUG:
+                    #     warnings.warn(f"Collaboration failed: {e}")
             
             # 再起動チェック（頻度制限）
             if self.iteration_count % 5 == 0:
                 for fw in self.fireworks:
                     should_restart, reasons = fw.check_restart_conditions(self.fireworks)
                     if should_restart:
-                        if DEBUG:
-                            print(f"    FW {fw.firework_id} restart: {reasons}")
+                        # if DEBUG:
+                        #     print(f"    FW {fw.firework_id} restart: {reasons}")
                         fw.restart()
             
             # 停滞管理
@@ -622,26 +624,26 @@ class HCFWA:
             self.iteration_count += 1
             
             # 進捗表示
-            if DEBUG and self.iteration_count % 20 == 0:
-                print(f"Iter: {self.iteration_count:4d} | Evals: {self.global_evaluation_count:6d} | Best: {self.best_fitness:.6e}")
+            # if DEBUG and self.iteration_count % 20 == 0:
+            #     print(f"Iter: {self.iteration_count:4d} | Evals: {self.global_evaluation_count:6d} | Best: {self.best_fitness:.6e}")
             
             # 安全弁
             if self.iteration_count >= max_iters_cap:
-                if DEBUG:
-                    print("Iteration cap reached. Stopping.")
+                # if DEBUG:
+                #     print("Iteration cap reached. Stopping.")
                 break
             
             # 早期終了
             if self.best_fitness < 1e-12:
-                if DEBUG:
-                    print(f"Early termination: {self.best_fitness:.6e}")
+                # if DEBUG:
+                #     print(f"Early termination: {self.best_fitness:.6e}")
                 break
         
-        if DEBUG:
-            print(f"\nOptimization completed:")
-            print(f"  Iterations: {self.iteration_count}")
-            print(f"  Evaluations: {self.global_evaluation_count}")
-            print(f"  Best fitness: {self.best_fitness:.6e}")
+        # if DEBUG:
+        #     print(f"\nOptimization completed:")
+        #     print(f"  Iterations: {self.iteration_count}")
+        #     print(f"  Evaluations: {self.global_evaluation_count}")
+        #     print(f"  Best fitness: {self.best_fitness:.6e}")
         
         return self.best_solution, self.best_fitness, self.fitness_history
 
