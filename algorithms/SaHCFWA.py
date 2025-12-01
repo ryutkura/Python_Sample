@@ -223,43 +223,58 @@ class HybridFirework:
             }
 
     def compute_spark_count(self, all_fireworks: List['HybridFirework']) -> int:
-        """
-        火花数計算（論文Eq.1）
-        s_i = m * (y_max - f(x_i) + ξ) / Σ(y_max - f(x_j) + ξ)
-        """
-        xi = 1e-10  # ゼロ除算回避
+        """火花数計算（論文Eq.1）- NaN安全版"""
+        xi = 1e-10
         
-        fitnesses = [fw.fitness for fw in all_fireworks]
+        # inf/NaN対策
+        fitnesses = [fw.fitness if np.isfinite(fw.fitness) else 1e30 for fw in all_fireworks]
+        my_fitness = self.fitness if np.isfinite(self.fitness) else 1e30
+        
         y_max = max(fitnesses)
+        y_min = min(fitnesses)
         
-        numerator = y_max - self.fitness + xi
+        # 全て同じ値の場合
+        if abs(y_max - y_min) < xi:
+            return max(1, int(SAFWA_M / max(1, len(all_fireworks))))
+        
+        numerator = y_max - my_fitness + xi
         denominator = sum(y_max - f + xi for f in fitnesses)
         
-        s_i = int(SAFWA_M * numerator / denominator)
+        if denominator < xi or not np.isfinite(numerator / denominator):
+            return max(1, int(SAFWA_M / max(1, len(all_fireworks))))
         
-        # 上下限クリップ（論文のa, bパラメータ）
-        s_min = int(SAFWA_A * SAFWA_M)
+        s_i = int(np.clip(SAFWA_M * numerator / denominator, 1, SAFWA_M))
+        
+        s_min = max(1, int(SAFWA_A * SAFWA_M))
         s_max = int(SAFWA_B * SAFWA_M)
         
         return max(s_min, min(s_max, s_i))
 
+
     def compute_amplitude(self, all_fireworks: List['HybridFirework']) -> float:
-        """
-        爆発振幅計算（論文Eq.2）
-        A_i = Â * (f(x_i) - y_min + ξ) / Σ(f(x_j) - y_min + ξ)
-        """
+        """爆発振幅計算（論文Eq.2）- NaN安全版"""
         xi = 1e-10
         
-        fitnesses = [fw.fitness for fw in all_fireworks]
-        y_min = min(fitnesses)
+        fitnesses = [fw.fitness if np.isfinite(fw.fitness) else 1e30 for fw in all_fireworks]
+        my_fitness = self.fitness if np.isfinite(self.fitness) else 1e30
         
-        numerator = self.fitness - y_min + xi
+        y_min = min(fitnesses)
+        y_max = max(fitnesses)
+        range_size = np.mean(self.bounds[:, 1] - self.bounds[:, 0])
+        default_amplitude = SAFWA_A_HAT * range_size / max(1, len(all_fireworks))
+        
+        if abs(y_max - y_min) < xi:
+            return default_amplitude
+        
+        numerator = my_fitness - y_min + xi
         denominator = sum(f - y_min + xi for f in fitnesses)
         
-        range_size = np.mean(self.bounds[:, 1] - self.bounds[:, 0])
+        if denominator < xi or not np.isfinite(numerator / denominator):
+            return default_amplitude
+        
         A_i = SAFWA_A_HAT * range_size * numerator / denominator
         
-        return A_i
+        return A_i if np.isfinite(A_i) else default_amplitude
 
     def generate_sparks(self, num_sparks: int, amplitude: float,
                        all_fireworks: List['HybridFirework']) -> Tuple[np.ndarray, List[CSGS]]:
@@ -673,7 +688,7 @@ class SaHCFWA:
         rng = self.fireworks[0].rng
         
         initial_solutions = [rng.uniform(self.bounds[:, 0], self.bounds[:, 1]) 
-                           for _ in range(num_initial)]
+                        for _ in range(num_initial)]
         initial_fitnesses = [self.problem.evaluate(sol) for sol in initial_solutions]
         self.global_evaluation_count += num_initial
         
@@ -681,11 +696,21 @@ class SaHCFWA:
         self.best_fitness = initial_fitnesses[best_idx]
         self.best_solution = initial_solutions[best_idx].copy()
         
-        for fw in self.fireworks:
-            fw.best_fitness_fw = self.best_fitness
-            fw.best_solution_fw = self.best_solution.copy()
-            fw.fitness = self.best_fitness
-
+        # === 修正: 各花火に異なる初期適応度を設定 ===
+        sorted_indices = np.argsort(initial_fitnesses)
+        for i, fw in enumerate(self.fireworks):
+            # 各花火に初期解を割り当て
+            if i < len(sorted_indices):
+                idx = sorted_indices[i]
+                fw.mean = initial_solutions[idx].copy()
+                fw.fitness = initial_fitnesses[idx]  # ← これが重要！
+                fw.best_fitness_fw = initial_fitnesses[idx]
+                fw.best_solution_fw = initial_solutions[idx].copy()
+            else:
+                fw.fitness = self.best_fitness
+                fw.best_fitness_fw = self.best_fitness
+                fw.best_solution_fw = self.best_solution.copy()
+                
     def _global_reboot(self):
         """グローバルリブート"""
         best_sol_backup = self.best_solution.copy() if self.best_solution is not None else None
