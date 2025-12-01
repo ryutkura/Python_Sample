@@ -6,7 +6,7 @@ EPSILON_L = 100
 M_GLOBAL_REBOOT = 100
 
 
-class OldHCFWA:
+class HCFWA:
     """修正版 HCFWA - 高速かつ正確"""
     
     def __init__(self, problem, num_local_fireworks: int = 4,
@@ -349,6 +349,3 @@ class _Firework:
         self.best_solution = None
         self.generation = 0
 
-
-# エイリアス
-HCFWA = OldHCFWA

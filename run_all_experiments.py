@@ -14,7 +14,6 @@ ALL_ALGORITHMS = [
     'efwa',
     'dynfwa',
     'hcfwa',
-    'oldhcfwa',
     'safwa',
     'sahcfwa',
 ]

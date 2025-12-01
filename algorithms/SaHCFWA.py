@@ -790,6 +790,3 @@ class SaHCFWA:
         
         return self.best_solution, self.best_fitness, self.fitness_history
 
-
-# エイリアス
-HCFWA = SaHCFWA

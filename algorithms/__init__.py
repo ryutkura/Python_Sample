@@ -5,7 +5,7 @@
 from .pso import PSO
 from .efwa import EFWA
 from .dynfwa import DynFWA
-from .SaHCFWA import HCFWA
+from .hcfwa import HCFWA
 from .safwa import SaFWA
 from .SaHCFWA import SaHCFWA
 # 新しいアルゴリズム（例: EFWA）を追加したら、ここにも追記します
