@@ -16,6 +16,9 @@ ALL_ALGORITHMS = [
     'hcfwa',
     'safwa',
     'sahcfwa',
+    'de_original',
+    'de_greedy',
+    'de'
 ]
 
 # --- problemsフォルダを自動スキャンして問題リストを作成する関数 ---

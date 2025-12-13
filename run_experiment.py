@@ -7,6 +7,7 @@ import os # ★osをインポート
 # 作成したパッケージからクラスをインポート
 from problems import SphereFunction, RosenbrockFunction, AckleyFunction
 from algorithms import PSO,EFWA, DynFWA, HCFWA, SaFWA, SaHCFWA
+from algorithms.de import DE1, DE2, DE_rand_1_bin
 
 # 実行可能なアルゴリズムを管理する辞書
 ALGORITHM_MAP = {
@@ -16,6 +17,9 @@ ALGORITHM_MAP = {
     'hcfwa': HCFWA,
     'safwa': SaFWA,
     'sahcfwa': SaHCFWA,
+    'de_original': DE1,           # 論文のDE1 (Exponential Crossover)
+    'de_greedy': DE2,             # 論文のDE2 (Current-to-best)
+    'de': DE_rand_1_bin,          # 一般的なDE (Binomial Crossover)
 }
 
 # ★★★ 追加：実行可能な問題を管理する辞書 ★★★
